@@ -19,6 +19,13 @@ app.post("/webhook", async (req, res) => {
     events.map(async (event) => {
       if (event.type !== "message" || event.message.type !== "text") return;
 
+      // ① まず「考え中…」とすぐに返信（1秒以内）
+      await client.replyMessage(event.replyToken, {
+        type: "text",
+        text: "考え中…ちょっと待ってね！",
+      });
+
+      // ② そのあと OpenAI に問い合わせる
       const userMessage = event.message.text;
 
       const aiResponse = await axios.post(
@@ -36,7 +43,8 @@ app.post("/webhook", async (req, res) => {
 
       const replyText = aiResponse.data.choices[0].message.content;
 
-      return client.replyMessage(event.replyToken, {
+      // ③ pushMessage で本当の返事を送る
+      await client.pushMessage(event.source.userId, {
         type: "text",
         text: replyText,
       });
@@ -45,5 +53,6 @@ app.post("/webhook", async (req, res) => {
 
   res.status(200).end();
 });
+
 
 app.listen(3000, () => console.log("Server running"));
